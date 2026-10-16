@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 148" role="img" aria-labelledby="title desc">
+  <title id="title">Ball House brand mark</title>
+  <desc id="desc">A universal ball containing a house.</desc>
+  <defs><clipPath id="ball-clip"><circle cx="70" cy="74" r="62"/></clipPath></defs>
+  
+    <circle cx="70" cy="74" r="62" fill="#F36C21"/>
+    <path fill="#071226" fill-rule="evenodd" d="M20 91L70 47L120 91L107 105L107 126H84V98H56V126H33V105L20 91ZM64 107H76V126H64V107Z"/>
+</svg>
