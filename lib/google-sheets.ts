@@ -182,7 +182,7 @@ async function ensureSheetReady() {
             values: STATUS_STYLES.map(({ status }) => ({ userEnteredValue: status })),
           },
           strict: true,
-          showCustomUi: true,
+          showCustomUi: false,
         },
       },
     },
@@ -208,25 +208,32 @@ async function ensureSheetReady() {
     });
   }
 
-  if (!tab.conditionalFormats?.length) {
-    STATUS_STYLES.forEach(({ status, background, foreground }, index) => {
-      requests.push({
-        addConditionalFormatRule: {
-          index,
-          rule: {
-            ranges: [{ sheetId, startRowIndex: 1, endRowIndex: rowCount, startColumnIndex: 13, endColumnIndex: 14 }],
-            booleanRule: {
-              condition: { type: "TEXT_EQ", values: [{ userEnteredValue: status }] },
-              format: {
-                backgroundColor: background,
-                textFormat: { foregroundColor: foreground, bold: true },
-              },
-            },
-          },
+  const existingStatusRules = new Map(
+    (tab.conditionalFormats ?? []).flatMap((rule, index) => {
+      const status = rule.booleanRule?.condition?.values?.[0]?.userEnteredValue;
+      return STATUS_STYLES.some((style) => style.status === status) && status ? [[status, index] as const] : [];
+    }),
+  );
+
+  STATUS_STYLES.forEach(({ status, background, foreground }) => {
+    const rule = {
+      ranges: [{ sheetId, startRowIndex: 1, endRowIndex: rowCount, startColumnIndex: 13, endColumnIndex: 14 }],
+      booleanRule: {
+        condition: { type: "TEXT_EQ", values: [{ userEnteredValue: status }] },
+        format: {
+          backgroundColor: background,
+          textFormat: { foregroundColor: foreground, bold: true },
         },
-      });
-    });
-  }
+      },
+    };
+    const existingIndex = existingStatusRules.get(status);
+
+    requests.push(
+      existingIndex == null
+        ? { addConditionalFormatRule: { index: 0, rule } }
+        : { updateConditionalFormatRule: { index: existingIndex, sheetId, rule } },
+    );
+  });
 
   await sheets.spreadsheets.batchUpdate({ spreadsheetId, requestBody: { requests } });
 
@@ -247,7 +254,7 @@ export async function saveOrderToSheet(order: OrderRecord) {
     spreadsheetId,
     range: `${quotedTab(tabName)}!A:O`,
     valueInputOption: "USER_ENTERED",
-    insertDataOption: "INSERT_ROWS",
+    insertDataOption: "OVERWRITE",
     requestBody: {
       values: [[
         order.orderId,
